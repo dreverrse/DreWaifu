@@ -1,0 +1,17 @@
+services:
+  - type: worker
+    name: drewaifu
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    autoDeploy: true
+    envVars:
+      - key: TOKEN
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: CHANNEL_ID
+        sync: false
+      - key: OWNER_ID
+        sync: false
