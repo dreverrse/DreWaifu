@@ -16,14 +16,10 @@ MISS_TIME = 21600
 
 last_message_time = {}
 
-
 async def ai_reply(update, context):
     msg = update.effective_message
 
     if not msg:
-        return
-
-    if not is_owner(update):
         return
 
     text = (msg.text or "").strip()
@@ -43,18 +39,33 @@ async def ai_reply(update, context):
     # ======================
 
     if state == "waiting_post":
+        if not is_owner(update):
+            await msg.reply_text("Fitur ini khusus admin ya 💖")
+            context.user_data["state"] = None
+            return
+
         context.args = text.split()
         await post_cmd(update, context)
         context.user_data["state"] = None
         return
 
     if state == "waiting_persona":
+        if not is_owner(update):
+            await msg.reply_text("Fitur ini khusus admin ya 💖")
+            context.user_data["state"] = None
+            return
+
         context.args = text.split()
         await persona_cmd(update, context)
         context.user_data["state"] = None
         return
 
     if state == "waiting_schedule":
+        if not is_owner(update):
+            await msg.reply_text("Fitur ini khusus admin ya 💖")
+            context.user_data["state"] = None
+            return
+
         parts = text.split()
 
         if len(parts) < 2:
@@ -72,6 +83,7 @@ async def ai_reply(update, context):
     # BUTTON MENU
     # ======================
 
+    # PUBLIC
     if text == "💖 Ngobrol":
         await msg.reply_text(
             "Aku di sini sayang 💖 Mau cerita apa hari ini?"
@@ -84,35 +96,53 @@ async def ai_reply(update, context):
         )
         return
 
+    # ADMIN ONLY
     if text == "📤 Post Channel":
-        context.user_data["state"] = "waiting_post"
+        if not is_owner(update):
+            await msg.reply_text("Fitur ini khusus admin ya 💖")
+            return
 
+        context.user_data["state"] = "waiting_post"
         await msg.reply_text(
             "Tulis pesan yang ingin dikirim ke channel 💌"
         )
         return
 
     if text == "📅 Jadwal":
-        context.user_data["state"] = "waiting_schedule"
+        if not is_owner(update):
+            await msg.reply_text("Fitur ini khusus admin ya 💖")
+            return
 
+        context.user_data["state"] = "waiting_schedule"
         await msg.reply_text(
             "Kirim format:\n22:30 Halo semuanya"
         )
         return
 
     if text == "⚙️ Persona":
-        context.user_data["state"] = "waiting_persona"
+        if not is_owner(update):
+            await msg.reply_text("Fitur ini khusus admin ya 💖")
+            return
 
+        context.user_data["state"] = "waiting_persona"
         await msg.reply_text(
             "Tulis persona baru 💖\nContoh:\nmanis, romantis, perhatian"
         )
         return
 
     if text == "📋 List Jadwal":
+        if not is_owner(update):
+            await msg.reply_text("Fitur ini khusus admin ya 💖")
+            return
+
         await list_cmd(update, context)
         return
 
     if text == "🧹 Hapus Semua":
+        if not is_owner(update):
+            await msg.reply_text("Fitur ini khusus admin ya 💖")
+            return
+
         await clearjob_cmd(update, context)
         return
 
