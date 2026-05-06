@@ -6,11 +6,7 @@ from telegram.constants import ParseMode
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 
 from utils.storage import save_data
-from utils.helpers import (
-    is_owner,
-    format_channel_text,
-    next_job_id
-)
+from utils.helpers import is_owner, format_channel_text, next_job_id
 
 from handlers.scheduler import add_daily_job
 from config import CHANNEL_ID, BOT_NAME
@@ -21,6 +17,7 @@ TZ = ZoneInfo("Asia/Jakarta")
 # ======================
 # START PREMIUM
 # ======================
+
 
 async def start(update, context):
     msg = update.effective_message
@@ -62,15 +59,13 @@ Persona saat ini:
 Silakan pilih menu di bawah ya ✨
 """
 
-    await msg.reply_text(
-        text.strip(),
-        reply_markup=main_menu()
-    )
+    await msg.reply_text(text.strip(), reply_markup=main_menu())
 
 
 # ======================
 # HELP
 # ======================
+
 
 async def help_cmd(update, context):
     await update.message.reply_text(
@@ -89,6 +84,7 @@ async def help_cmd(update, context):
 # PERSONA
 # ======================
 
+
 async def persona_cmd(update, context):
     if not is_owner(update):
         return
@@ -96,9 +92,7 @@ async def persona_cmd(update, context):
     text = " ".join(context.args).strip()
 
     if not text:
-        await update.message.reply_text(
-            "Contoh:\n/persona manis, romantis, perhatian"
-        )
+        await update.message.reply_text("Contoh:\n/persona manis, romantis, perhatian")
         return
 
     data = context.bot_data["data"]
@@ -106,14 +100,13 @@ async def persona_cmd(update, context):
 
     save_data(data)
 
-    await update.message.reply_text(
-        "Persona berhasil diubah 💖"
-    )
+    await update.message.reply_text("Persona berhasil diubah 💖")
 
 
 # ======================
 # POST CHANNEL
 # ======================
+
 
 async def post_cmd(update, context):
     if not is_owner(update):
@@ -122,9 +115,7 @@ async def post_cmd(update, context):
     text = " ".join(context.args).strip()
 
     if not text:
-        await update.message.reply_text(
-            "Contoh:\n/post Halo semuanya"
-        )
+        await update.message.reply_text("Contoh:\n/post Halo semuanya")
         return
 
     data = context.bot_data["data"]
@@ -132,26 +123,23 @@ async def post_cmd(update, context):
     await context.bot.send_message(
         chat_id=CHANNEL_ID,
         text=format_channel_text(data, text),
-        parse_mode=ParseMode.HTML
+        parse_mode=ParseMode.HTML,
     )
 
-    await update.message.reply_text(
-        "Pesan berhasil dikirim."
-    )
+    await update.message.reply_text("Pesan berhasil dikirim.")
 
 
 # ======================
 # SCHEDULE PRO
 # ======================
 
+
 async def schedule_cmd(update, context):
     if not is_owner(update):
         return
 
     if len(context.args) < 2:
-        await update.message.reply_text(
-            "Contoh:\n/schedule 08:30 Selamat pagi"
-        )
+        await update.message.reply_text("Contoh:\n/schedule 08:30 Selamat pagi")
         return
 
     hhmm = context.args[0]
@@ -167,47 +155,33 @@ async def schedule_cmd(update, context):
             raise ValueError
 
     except:
-        await update.message.reply_text(
-            "Format waktu salah. Gunakan HH:MM"
-        )
+        await update.message.reply_text("Format waktu salah. Gunakan HH:MM")
         return
 
     data = context.bot_data["data"]
 
     for item in data["scheduled_posts"]:
         if item["time"] == hhmm and item["text"].lower() == text.lower():
-            await update.message.reply_text(
-                "Jadwal sama sudah ada."
-            )
+            await update.message.reply_text("Jadwal sama sudah ada.")
             return
 
     job_id = next_job_id(data)
 
-    data["scheduled_posts"].append({
-        "id": job_id,
-        "time": hhmm,
-        "text": text
-    })
+    data["scheduled_posts"].append({"id": job_id, "time": hhmm, "text": text})
 
     save_data(data)
 
-    add_daily_job(
-        context.job_queue,
-        job_id,
-        hhmm,
-        text
-    )
+    add_daily_job(context.job_queue, job_id, hhmm, text)
 
     await update.message.reply_text(
-        f"✅ Jadwal ditambahkan\n"
-        f"ID: {job_id}\n"
-        f"Jam: {hhmm}"
+        f"✅ Jadwal ditambahkan\n" f"ID: {job_id}\n" f"Jam: {hhmm}"
     )
 
 
 # ======================
 # LIST PREMIUM
 # ======================
+
 
 async def list_cmd(update, context):
     data = context.bot_data["data"]
@@ -223,11 +197,7 @@ async def list_cmd(update, context):
     txt = "📅 Jadwal Aktif\n\n"
 
     for x in jobs:
-        txt += (
-            f"🆔 {x['id']}\n"
-            f"🕒 {x['time']}\n"
-            f"💬 {x['text']}\n\n"
-        )
+        txt += f"🆔 {x['id']}\n" f"🕒 {x['time']}\n" f"💬 {x['text']}\n\n"
 
     await update.message.reply_text(txt)
 
@@ -236,14 +206,13 @@ async def list_cmd(update, context):
 # DELETE JOB
 # ======================
 
+
 async def del_cmd(update, context):
     if not is_owner(update):
         return
 
     if not context.args:
-        await update.message.reply_text(
-            "Contoh:\n/del job_1"
-        )
+        await update.message.reply_text("Contoh:\n/del job_1")
         return
 
     job_id = context.args[0]
@@ -252,10 +221,7 @@ async def del_cmd(update, context):
 
     before = len(data["scheduled_posts"])
 
-    data["scheduled_posts"] = [
-        x for x in data["scheduled_posts"]
-        if x["id"] != job_id
-    ]
+    data["scheduled_posts"] = [x for x in data["scheduled_posts"] if x["id"] != job_id]
 
     for job in context.job_queue.get_jobs_by_name(job_id):
         job.schedule_removal()
@@ -265,17 +231,15 @@ async def del_cmd(update, context):
     after = len(data["scheduled_posts"])
 
     if before == after:
-        await update.message.reply_text(
-            "ID tidak ditemukan."
-        )
+        await update.message.reply_text("ID tidak ditemukan.")
     else:
-        await update.message.reply_text(
-            f"🗑 {job_id} dihapus."
-        )
+        await update.message.reply_text(f"🗑 {job_id} dihapus.")
+
 
 # ======================
 # ABOUT DEV
 # ======================
+
 
 async def dev_cmd(update, context):
     text = """
@@ -288,25 +252,20 @@ This bot build with Python + Telegram API and AI Open Router.
 
     keyboard = [
         [
-            InlineKeyboardButton(
-                "GitHub",
-                url="https://github.com/dreverrse"
-            ),
-            InlineKeyboardButton(
-                "Instagram",
-                url="https://instagram.com/dreverrse"
-            )
+            InlineKeyboardButton("GitHub", url="https://github.com/dreverrse"),
+            InlineKeyboardButton("Instagram", url="https://instagram.com/dreverrse"),
         ]
     ]
 
     await update.message.reply_text(
-        text.strip(),
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        text.strip(), reply_markup=InlineKeyboardMarkup(keyboard)
     )
+
 
 # ======================
 # CLEAR ALL JOBS
 # ======================
+
 
 async def clearjob_cmd(update, context):
     if not is_owner(update):
@@ -321,8 +280,4 @@ async def clearjob_cmd(update, context):
 
     save_data(data)
 
-    await update.message.reply_text(
-        "🧹 Semua jadwal dihapus."
-    )
-    
-    
+    await update.message.reply_text("🧹 Semua jadwal dihapus.")

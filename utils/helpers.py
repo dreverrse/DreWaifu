@@ -1,10 +1,13 @@
 from config import OWNER_ID
 
+
 def is_owner(update):
     return update.effective_user.id == OWNER_ID
 
+
 def format_channel_text(data, text):
     return f"💖 {text}"
+
 
 def next_job_id(data):
     nums = []

@@ -1,0 +1,20 @@
+AVAILABLE TOOLS
+
+web_search(url)
+Description:
+Read and extract text content from a website URL.
+
+Usage:
+[TOOL:web_search|https://example.com]
+
+Arguments:
+
+- url: website URL
+
+Rules:
+
+- Use tools only when needed
+- Never invent tools
+- Follow the exact format
+- Only call one tool at a time
+- If a tool is needed, output ONLY the tool call

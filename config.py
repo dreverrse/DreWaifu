@@ -13,8 +13,8 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 TZ = ZoneInfo("Asia/Jakarta")
 
 MODELS = [
- "openai/gpt-4o-mini",
- "meta-llama/llama-3.1-8b-instruct:free",
- "google/gemma-2-9b-it:free",
- "mistralai/mistral-7b-instruct:free"
+    "openai/gpt-4o-mini",
+    "meta-llama/llama-3.1-8b-instruct:free",
+    "google/gemma-2-9b-it:free",
+    "mistralai/mistral-7b-instruct:free",
 ]

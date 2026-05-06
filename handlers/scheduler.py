@@ -11,7 +11,7 @@ async def send_scheduled_post(context):
     await context.bot.send_message(
         chat_id=CHANNEL_ID,
         text=format_channel_text(data, text),
-        parse_mode=ParseMode.HTML
+        parse_mode=ParseMode.HTML,
     )
 
 
@@ -26,7 +26,7 @@ def add_daily_job(job_queue, job_id, hhmm, text):
             send_scheduled_post,
             time=time(hour=hour, minute=minute, tzinfo=TZ),
             data={"text": text},
-            name=str(job_id)
+            name=str(job_id),
         )
 
     except Exception as e:
@@ -41,9 +41,4 @@ def rebuild_jobs(app):
     data = app.bot_data["data"]
 
     for item in data.get("scheduled_posts", []):
-        add_daily_job(
-            app.job_queue,
-            item["id"],
-            item["time"],
-            item["text"]
-        )
+        add_daily_job(app.job_queue, item["id"], item["time"], item["text"])
