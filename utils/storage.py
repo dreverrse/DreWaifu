@@ -7,6 +7,8 @@ default_data = {
     "persona": "manis, setia, sopan, sedikit genit",
     "prefix": "Hai sayang",
     "scheduled_posts": [],
+    "crypto_alerts": {},   # {user_id: [{coin, condition, target, chat_id}]}
+    "habits": {},          # {user_id: [{id, name, time, chat_id, streak, last_done}]}
 }
 
 
@@ -21,4 +23,11 @@ def load_data():
         return default_data.copy()
 
     with open(DATA_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+        data = json.load(f)
+
+    # Pastikan key baru ada (upgrade safe)
+    for key, val in default_data.items():
+        if key not in data:
+            data[key] = val
+
+    return data

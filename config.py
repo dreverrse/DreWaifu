@@ -18,3 +18,6 @@ MODELS = [
     "google/gemma-2-9b-it:free",
     "mistralai/mistral-7b-instruct:free",
 ]
+
+# Interval cek harga crypto (detik)
+CRYPTO_CHECK_INTERVAL = 300  # 5 menit

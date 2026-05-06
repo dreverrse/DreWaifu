@@ -4,48 +4,16 @@ CODE_BLOCK_PATTERN = r"```[\s\S]*?```"
 
 
 def split_message(text, limit=4000):
-
     messages = []
+    code_blocks = re.findall(CODE_BLOCK_PATTERN, text)
 
-    code_blocks = re.findall(
-        CODE_BLOCK_PATTERN,
-        text
-    )
-
-    # Kalau ada code block
     if code_blocks:
-
         for block in code_blocks:
-
             messages.append(block)
-
-            text = text.replace(
-                block,
-                ""
-            )
-
-        # sisa text biasa
+            text = text.replace(block, "", 1)
         if text.strip():
-
-            chunks = [
-                text[i:i + limit]
-                for i in range(
-                    0,
-                    len(text),
-                    limit
-                )
-            ]
-
+            chunks = [text[i: i + limit] for i in range(0, len(text), limit)]
             messages.extend(chunks)
-
         return messages
 
-    # kalau bukan code
-    return [
-        text[i:i + limit]
-        for i in range(
-            0,
-            len(text),
-            limit
-        )
-    ]
+    return [text[i: i + limit] for i in range(0, len(text), limit)]

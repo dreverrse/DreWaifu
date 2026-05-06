@@ -1,6 +1,7 @@
 import time
 import traceback
-
+from datetime import datetime
+from config import TZ
 from core.tool_executor import execute_tool
 from core.tool_parser import parse_tool_call
 
@@ -20,31 +21,25 @@ from handlers.commands import (
 
 COOLDOWN = 1
 MISS_TIME = 21600
+DAILY_LIMIT = 20
 
 last_message_time = {}
+daily_count = {}  # {user_id: {"date": "2025-05-06", "count": 0}}
 
 
 async def ai_reply(update, context):
-
     msg = update.effective_message
 
     if not msg or not msg.text:
         return
 
     text = msg.text.strip()
-
     if not text:
         return
 
     user = update.effective_user
-
     user_id = user.id
-
-    telegram_name = (
-        user.first_name
-        or user.full_name
-        or "sayang"
-    )
+    telegram_name = user.first_name or user.full_name or "sayang"
 
     now = time.time()
 
@@ -55,57 +50,42 @@ async def ai_reply(update, context):
     state = context.user_data.get("state")
 
     if state:
-
         if not is_owner(update):
-
-            await deny_access(
-                msg,
-                context,
-            )
-
+            await deny_access(msg, context)
             return
 
         if state == "waiting_post":
-
             context.args = text.split()
-
-            await post_cmd(
-                update,
-                context,
-            )
+            await post_cmd(update, context)
 
         elif state == "waiting_persona":
-
             context.args = text.split()
-
-            await persona_cmd(
-                update,
-                context,
-            )
+            await persona_cmd(update, context)
 
         elif state == "waiting_schedule":
-
             parts = text.split()
-
             if len(parts) < 2:
-
-                await msg.reply_text(
-                    "Format salah.\n"
-                    "Contoh:\n"
-                    "22:30 Halo semua"
-                )
-
+                await msg.reply_text("Format salah.\nContoh:\n22:30 Halo semua")
                 return
-
             context.args = parts
+            await schedule_cmd(update, context)
 
-            await schedule_cmd(
-                update,
-                context,
-            )
+        elif state == "waiting_addalert":
+            context.args = text.split()
+            from handlers.crypto import add_alert_cmd
+            await add_alert_cmd(update, context)
+
+        elif state == "waiting_addhabit":
+            context.args = text.split()
+            from handlers.habit import add_habit_cmd
+            await add_habit_cmd(update, context)
+
+        elif state == "waiting_done":
+            context.args = text.split()
+            from handlers.habit import done_habit_cmd
+            await done_habit_cmd(update, context)
 
         context.user_data["state"] = None
-
         return
 
     # ======================
@@ -113,21 +93,9 @@ async def ai_reply(update, context):
     # ======================
 
     if text.startswith("/read "):
-
-        url = text.replace(
-            "/read ",
-            ""
-        ).strip()
-
-        result = execute_tool(
-            "web_search",
-            url,
-        )
-
-        await msg.reply_text(
-            result[:4000]
-        )
-
+        url = text.replace("/read ", "").strip()
+        result = execute_tool("web_search", url)
+        await msg.reply_text(result[:4000])
         return
 
     # ======================
@@ -135,30 +103,54 @@ async def ai_reply(update, context):
     # ======================
 
     if text == "💖 Ngobrol":
-
-        await msg.reply_text(
-            "Aku di sini sayang 💖 "
-            "Mau cerita apa hari ini?"
-        )
-
+        await msg.reply_text("Aku di sini sayang 💖 Mau cerita apa hari ini?")
         return
 
     if text == "💕 Manja":
-
-        await msg.reply_text(
-            "Sini dekat aku dulu 🤍 "
-            "Aku temenin."
-        )
-
+        await msg.reply_text("Sini dekat aku dulu 🤍 Aku temenin.")
         return
 
     if text == "ℹ️ Bantuan":
+        await help_cmd(update, context)
+        return
 
-        await help_cmd(
-            update,
-            context,
+    if text == "🪙 Cek Harga":
+        await msg.reply_text(
+            "Mau cek harga coin apa?\n"
+            "Ketik: /price BTC\n"
+            "atau /price ETH, /price SOL, dll."
         )
+        return
 
+    if text == "📊 Alert Crypto":
+        await msg.reply_text(
+            "Mau set alert harga crypto?\n\n"
+            "Format:\n"
+            "/addalert BTC > 70000\n"
+            "/addalert ETH < 2000\n\n"
+            "Lihat alert: /listalert\n"
+            "Hapus alert: /delalert alert_1"
+        )
+        return
+
+    if text == "💪 Habit":
+        await msg.reply_text(
+            "Mau tambah habit harian?\n\n"
+            "Format:\n"
+            "/addhabit Olahraga 06:00\n"
+            "/addhabit Baca buku 21:30\n\n"
+            "Lihat habit: /listhabit\n"
+            "Hapus habit: /delhabit habit_1"
+        )
+        return
+
+    if text == "✅ Selesai Habit":
+        context.user_data["state"] = "waiting_done"
+        await msg.reply_text(
+            "Habit mana yang sudah selesai?\n"
+            "Kirim ID-nya, contoh: habit_1\n\n"
+            "Atau ketik /listhabit untuk lihat ID."
+        )
         return
 
     # ======================
@@ -166,64 +158,35 @@ async def ai_reply(update, context):
     # ======================
 
     admin_buttons = {
-
         "📤 Post Channel": (
             "waiting_post",
-            "Tulis pesan yang ingin "
-            "dikirim ke channel 💌",
+            "Tulis pesan yang ingin dikirim ke channel 💌",
         ),
-
         "📅 Jadwal": (
             "waiting_schedule",
-            "Kirim format:\n"
-            "22:30 Halo semuanya",
+            "Kirim format:\n22:30 Halo semuanya",
         ),
-
         "⚙️ Persona": (
             "waiting_persona",
-            "Tulis persona baru 💖\n"
-            "Contoh:\n"
-            "manis, romantis, perhatian",
+            "Tulis persona baru 💖\nContoh:\nmanis, romantis, perhatian",
         ),
-
-        "📋 List Jadwal":
-            list_cmd,
-
-        "🧹 Hapus Semua":
-            clearjob_cmd,
+        "📋 List Jadwal": list_cmd,
+        "🧹 Hapus Semua": clearjob_cmd,
     }
 
     if text in admin_buttons:
-
         if not is_owner(update):
-
-            await deny_access(
-                msg,
-                context,
-            )
-
+            await deny_access(msg, context)
             return
 
         action = admin_buttons[text]
 
         if isinstance(action, tuple):
-
             state_key, reply_text = action
-
-            context.user_data["state"] = (
-                state_key
-            )
-
-            await msg.reply_text(
-                reply_text
-            )
-
+            context.user_data["state"] = state_key
+            await msg.reply_text(reply_text)
         else:
-
-            await action(
-                update,
-                context,
-            )
+            await action(update, context)
 
         return
 
@@ -239,68 +202,56 @@ async def ai_reply(update, context):
     # ======================
 
     if user_id in last_message_time:
-
-        diff = (
-            now
-            - last_message_time[user_id]
-        )
-
+        diff = now - last_message_time[user_id]
         if diff < COOLDOWN:
             return
 
     extra_context = ""
 
     if user_id in last_message_time:
-
-        gone = (
-            now
-            - last_message_time[user_id]
-        )
-
+        gone = now - last_message_time[user_id]
         if gone > MISS_TIME:
-
             extra_context = (
-                "User sudah lama "
-                "tidak chat. "
-                "Tunjukkan rasa "
-                "rindu dan hangat."
+                "User sudah lama tidak chat. "
+                "Tunjukkan rasa rindu dan hangat."
             )
 
     last_message_time[user_id] = now
 
     # ======================
+    # DAILY LIMIT
+    # ======================
+
+    today = datetime.now(TZ).strftime("%Y-%m-%d")
+
+    if user_id not in daily_count:
+        daily_count[user_id] = {"date": today, "count": 0}
+
+    if daily_count[user_id]["date"] != today:
+        daily_count[user_id] = {"date": today, "count": 0}
+
+    if daily_count[user_id]["count"] >= DAILY_LIMIT:
+        await msg.reply_text(
+            "Aku udah banyak ngobrol hari ini sayang 🥺\n"
+            "Besok kita lanjut ya 💖"
+        )
+        return
+
+    daily_count[user_id]["count"] += 1
+
+    # ======================
     # AI CHAT
     # ======================
 
-    data = context.bot_data.get(
-        "data",
-        {},
-    )
+    data = context.bot_data.get("data", {})
+    persona = data.get("persona", "manis, romantis, lembut")
 
-    persona = data.get(
-        "persona",
-        "manis, romantis, lembut",
-    )
-
-    await context.bot.send_chat_action(
-        chat_id=msg.chat_id,
-        action="typing",
-    )
+    await context.bot.send_chat_action(chat_id=msg.chat_id, action="typing")
 
     try:
-
         user_input = text
-
         if extra_context:
-
-            user_input = (
-                f"{extra_context}\n"
-                f"Pesan user: {text}"
-            )
-
-        # ======================
-        # FIRST AI CALL
-        # ======================
+            user_input = f"{extra_context}\nPesan user: {text}"
 
         answer = ask_openrouter(
             user_id=user_id,
@@ -309,32 +260,15 @@ async def ai_reply(update, context):
             telegram_name=telegram_name,
         )
 
-        # ======================
-        # TOOL PARSING
-        # ======================
+        tool_call = parse_tool_call(answer)
 
-        tool_call = parse_tool_call(
-            answer
-        )
+        if tool_call and "[TOOL:" not in user_input:
+            tool_result = execute_tool(tool_call["tool"], tool_call["argument"])
 
-        if (
-            tool_call
-            and "[TOOL:" not in user_input
-        ):
-
-            tool_result = execute_tool(
-                tool_call["tool"],
-                tool_call["argument"],
+            final_prompt = (
+                f"Tool Result:\n{tool_result}\n\n"
+                f"Jawab user secara natural, jelas, dan ramah berdasarkan hasil tool di atas."
             )
-
-            final_prompt = f"""
-Tool Result:
-{tool_result}
-
-Jawab user secara natural,
-jelas, dan ramah berdasarkan
-hasil tool di atas.
-"""
 
             answer = ask_openrouter(
                 user_id=user_id,
@@ -343,41 +277,16 @@ hasil tool di atas.
                 telegram_name=telegram_name,
             )
 
-        # ======================
-        # MESSAGE FORMATTER
-        # ======================
-
-        messages = split_message(
-            answer
-        )
+        messages = split_message(answer)
 
         for part in messages:
-
-            # CODE BLOCK
-            if "```" in part:
-
-                await msg.reply_text(part)
-
-            # NORMAL TEXT
-            else:
-
-                await msg.reply_text(
-                    part
-                )
+            await msg.reply_text(part)
 
     except Exception as e:
-
         traceback.print_exc()
-
-        await msg.reply_text(
-            f"ERROR:\n{e}"
-        )
+        await msg.reply_text(f"ERROR:\n{e}")
 
 
 async def deny_access(msg, context):
-
     context.user_data["state"] = None
-
-    await msg.reply_text(
-        "Fitur ini khusus admin ya 💖"
-    )
+    await msg.reply_text("Fitur ini khusus admin ya 💖")

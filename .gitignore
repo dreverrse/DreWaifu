@@ -1,5 +1,7 @@
 .env
-*.json
 __pycache__/
 *.pyc
-venv/
+*.pyo
+memory.json
+bot_data.json
+*.log

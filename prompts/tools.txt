@@ -8,11 +8,9 @@ Usage:
 [TOOL:web_search|https://example.com]
 
 Arguments:
-
 - url: website URL
 
 Rules:
-
 - Use tools only when needed
 - Never invent tools
 - Follow the exact format

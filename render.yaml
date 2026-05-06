@@ -7,11 +7,13 @@ services:
     startCommand: python main.py
     autoDeploy: true
     envVars:
-      - key: TOKEN
+      - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: OPENROUTER_API_KEY
         sync: false
-      - key: CHANNEL_ID
+      - key: TELEGRAM_CHANNEL_ID
         sync: false
       - key: OWNER_ID
+        sync: false
+      - key: BOT_NAME
         sync: false
