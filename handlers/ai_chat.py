@@ -4,7 +4,7 @@ from datetime import datetime
 from config import TZ
 from core.tool_executor import execute_tool
 from core.react_agent import run_agent
-from utils.markdown import escape_markdown
+from utils.markdown import safe_markdown
 
 from utils.helpers import is_owner
 from utils.message_formatter import split_message
@@ -268,9 +268,9 @@ async def ai_reply(update, context):
 
         for part in messages:
             try:
-                await msg.reply_text(part, parse_mode="MarkdownV2")
+                await msg.reply_text(safe_markdown(part), parse_mode="MarkdownV2")
             except Exception:
-                await msg.reply_text(escape_markdown(part), parse_mode="MarkdownV2")
+                await msg.reply_text(part)
 
     except Exception as e:
         traceback.print_exc()
