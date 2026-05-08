@@ -2,13 +2,17 @@ import requests
 from bs4 import BeautifulSoup
 
 
-def browse(url):
+def read_url(url):
+    """Baca isi halaman web dari URL yang diberikan."""
     try:
         headers = {"User-Agent": "Mozilla/5.0"}
-        r = requests.get(url, timeout=30, headers=headers)
+        r = requests.get(url, timeout=20, headers=headers)
+        r.raise_for_status()
         soup = BeautifulSoup(r.text, "html.parser")
-        for tag in soup(["script", "style"]):
+        for tag in soup(["script", "style", "nav", "footer", "header"]):
             tag.decompose()
-        return soup.get_text(separator="\n")[:6000]
+        text = soup.get_text(separator="\n")
+        lines = [l.strip() for l in text.splitlines() if l.strip()]
+        return "\n".join(lines)[:4000]
     except Exception as e:
-        return f"BROWSE ERROR: {e}"
+        return f"READ URL ERROR: {e}"

@@ -7,8 +7,8 @@ from memory.memory_manager import load_memory, save_memory
 with open("prompts/system.txt", "r", encoding="utf-8") as f:
     SYSTEM_PROMPT = f.read()
 
-with open("prompts/tools.txt", "r", encoding="utf-8") as f:
-    TOOLS_PROMPT = f.read()
+with open("prompts/agent.txt", "r", encoding="utf-8") as f:
+    AGENT_PROMPT = f.read()
 
 chat_memory = load_memory()
 
@@ -67,7 +67,7 @@ def ask_openrouter(user_id, user_text, persona, telegram_name):
     update_mood(user_data, user_text)
 
     user_data["history"].append({"role": "user", "content": user_text})
-    user_data["history"] = user_data["history"][-12:]
+    user_data["history"] = user_data["history"][-14:]
 
     reunion_text = ""
     if gone_seconds > 43200:
@@ -76,7 +76,7 @@ def ask_openrouter(user_id, user_text, persona, telegram_name):
         reunion_text = "User cukup lama tidak hadir. Sambut hangat."
 
     memory_text = build_memory_text(telegram_name, user_data, persona, reunion_text)
-    system_content = SYSTEM_PROMPT + "\n" + TOOLS_PROMPT + "\n" + memory_text
+    system_content = SYSTEM_PROMPT + "\n\n" + AGENT_PROMPT + "\n\n" + memory_text
 
     messages = [{"role": "system", "content": system_content}] + user_data["history"]
 
@@ -85,16 +85,16 @@ def ask_openrouter(user_id, user_text, persona, telegram_name):
             payload = {
                 "model": model,
                 "messages": messages,
-                "temperature": 1.2,
+                "temperature": 1.0,
                 "top_p": 0.95,
-                "max_tokens": 320,
+                "max_tokens": 512,
             }
 
             data = send_request(url=url, headers=headers, payload=payload)
             answer = data["choices"][0]["message"]["content"].strip()
 
             user_data["history"].append({"role": "assistant", "content": answer})
-            user_data["history"] = user_data["history"][-12:]
+            user_data["history"] = user_data["history"][-14:]
 
             save_memory(chat_memory)
             return answer

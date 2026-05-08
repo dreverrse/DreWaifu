@@ -11,3 +11,10 @@ def get_tool(name):
 
 def get_all_tools():
     return TOOLS
+
+
+def list_tools():
+    return [
+        {"name": name, "description": t["description"]}
+        for name, t in TOOLS.items()
+    ]

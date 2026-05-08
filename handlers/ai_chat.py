@@ -3,7 +3,7 @@ import traceback
 from datetime import datetime
 from config import TZ
 from core.tool_executor import execute_tool
-from core.tool_parser import parse_tool_call
+from core.react_agent import run_agent
 
 from utils.helpers import is_owner
 from utils.message_formatter import split_message
@@ -25,6 +25,13 @@ DAILY_LIMIT = 20
 
 last_message_time = {}
 daily_count = {}  # {user_id: {"date": "2025-05-06", "count": 0}}
+
+ALL_BUTTONS = [
+    "💖 Ngobrol", "💕 Manja", "ℹ️ Bantuan",
+    "🪙 Cek Harga", "📊 Alert Crypto", "💪 Habit",
+    "✅ Selesai Habit", "📤 Post Channel", "📅 Jadwal",
+    "⚙️ Persona", "📋 List Jadwal", "🧹 Hapus Semua",
+]
 
 
 async def ai_reply(update, context):
@@ -48,6 +55,11 @@ async def ai_reply(update, context):
     # ======================
 
     state = context.user_data.get("state")
+
+    # Reset state jika user tekan tombol menu lain
+    if state and text in ALL_BUTTONS:
+        context.user_data["state"] = None
+        state = None
 
     if state:
         if not is_owner(update):
@@ -86,16 +98,6 @@ async def ai_reply(update, context):
             await done_habit_cmd(update, context)
 
         context.user_data["state"] = None
-        return
-
-    # ======================
-    # TOOL COMMAND
-    # ======================
-
-    if text.startswith("/read "):
-        url = text.replace("/read ", "").strip()
-        result = execute_tool("web_search", url)
-        await msg.reply_text(result[:4000])
         return
 
     # ======================
@@ -240,7 +242,7 @@ async def ai_reply(update, context):
     daily_count[user_id]["count"] += 1
 
     # ======================
-    # AI CHAT
+    # AI AGENT (ReAct Loop)
     # ======================
 
     data = context.bot_data.get("data", {})
@@ -253,29 +255,13 @@ async def ai_reply(update, context):
         if extra_context:
             user_input = f"{extra_context}\nPesan user: {text}"
 
-        answer = ask_openrouter(
+        answer = run_agent(
+            ask_fn=ask_openrouter,
             user_id=user_id,
             user_text=user_input,
             persona=persona,
             telegram_name=telegram_name,
         )
-
-        tool_call = parse_tool_call(answer)
-
-        if tool_call and "[TOOL:" not in user_input:
-            tool_result = execute_tool(tool_call["tool"], tool_call["argument"])
-
-            final_prompt = (
-                f"Tool Result:\n{tool_result}\n\n"
-                f"Jawab user secara natural, jelas, dan ramah berdasarkan hasil tool di atas."
-            )
-
-            answer = ask_openrouter(
-                user_id=user_id,
-                user_text=final_prompt,
-                persona=persona,
-                telegram_name=telegram_name,
-            )
 
         messages = split_message(answer)
 
